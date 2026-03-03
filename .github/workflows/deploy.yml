@@ -50,7 +50,6 @@ jobs:
           wasm-pack build --target web
           cd ../../../../
           mv _wasm_lib/pubky-sdk/bindings/js/pkg .
-          rm -rf _wasm_lib
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
