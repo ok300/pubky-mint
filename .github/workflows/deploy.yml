@@ -27,9 +27,6 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
-      - name: Cache Rust build artifacts
-        uses: Swatinem/rust-cache@v2
-
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
@@ -39,6 +36,11 @@ jobs:
           repository: pubky/pubky-core
           ref: v0.6.0   # <-- pin to a commit SHA or tag
           path: _wasm_lib
+
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "_wasm_lib/pubky-sdk/bindings/js -> target"
 
       - name: Build pkg/ from GitHub source
         run: |
