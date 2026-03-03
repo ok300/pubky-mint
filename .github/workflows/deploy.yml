@@ -1,0 +1,67 @@
+name: Build & Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:   # allows manual triggering
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one deployment at a time
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout app repo
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Checkout Pubky SDK repo at pinned commit
+        uses: actions/checkout@v4
+        with:
+          repository: pubky/pubky-core
+          ref: v0.6.0   # <-- pin to a commit SHA or tag
+          path: _wasm_lib
+
+      - name: Build pkg/ from GitHub source
+        run: |
+          cd _wasm_lib
+          cd pubky-sdk/bindings/js
+          rm -rf pkg
+          wasm-pack build --target web
+          cd ../../../../
+          mv _wasm_lib/pubky-core/bindings/js/pkg .
+          rm -rf _wasm_lib
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'   # uploads index.html + the freshly built pkg/
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
