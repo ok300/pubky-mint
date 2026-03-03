@@ -3,13 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pubky</title>
+  <title>Pubky Mint</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: monospace; background: #0f0f0f; color: #e0e0e0; height: 100vh; overflow: hidden; }
 
     #auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; gap: 1.25rem; }
     #auth-screen h1 { font-size: 1.4rem; letter-spacing: 0.1em; }
+    #auth-subtitle { color: #555; font-size: 0.85rem; margin-top: -0.5rem; }
     #qr-wrap { padding: 12px; background: #fff; border-radius: 6px; }
     #auth-status { color: #666; font-size: 0.85rem; }
 
@@ -97,7 +98,8 @@
 <body>
 
 <div id="auth-screen">
-  <h1>pubky</h1>
+  <h1>Pubky Mint</h1>
+  <p id="auth-subtitle">A refreshing way to browse</p>
   <div id="qr-wrap"><canvas id="qr-canvas"></canvas></div>
   <p id="auth-status">Scan with your Pubky app to sign in</p>
 </div>
