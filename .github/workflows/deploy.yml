@@ -40,7 +40,7 @@ jobs:
       - name: Cache Rust build artifacts
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: "_wasm_lib/pubky-sdk/bindings/js -> target"
+          workspaces: "_wasm_lib -> _wasm_lib/target"
 
       - name: Build pkg/ from GitHub source
         run: |
@@ -51,13 +51,20 @@ jobs:
           cd ../../../../
           mv _wasm_lib/pubky-sdk/bindings/js/pkg .
 
+      - name: Stage deployment directory
+        run: |
+          mkdir _site
+          cp index.html _site/
+          cp -r pkg _site/
+          cp LICENSE _site/ 2>/dev/null || true
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'   # uploads index.html + the freshly built pkg/
+          path: '_site'
 
   deploy:
     needs: build
