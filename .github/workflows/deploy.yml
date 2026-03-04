@@ -15,6 +15,9 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+env:
+  WASM_LIB_REF: v0.6.0   # <-- Pubky SDK commit SHA or tag
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -22,33 +25,38 @@ jobs:
       - name: Checkout app repo
         uses: actions/checkout@v4
 
+      - name: Cache WASM pkg/ output
+        id: cache-pkg
+        uses: actions/cache@v4
+        with:
+          path: pkg
+          key: wasm-pkg-${{ env.WASM_LIB_REF }}
+
       - name: Install Rust toolchain
+        if: steps.cache-pkg.outputs.cache-hit != 'true'
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
 
-      - name: Install wasm-pack
-        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-
       - name: Checkout Pubky SDK repo at pinned commit
+        if: steps.cache-pkg.outputs.cache-hit != 'true'
         uses: actions/checkout@v4
         with:
           repository: pubky/pubky-core
-          ref: v0.6.0   # <-- pin to a commit SHA or tag
+          ref: ${{ env.WASM_LIB_REF }}
           path: _wasm_lib
 
       - name: Cache Rust build artifacts
+        if: steps.cache-pkg.outputs.cache-hit != 'true'
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: "_wasm_lib -> _wasm_lib/target"
 
       - name: Build pkg/ from GitHub source
+        if: steps.cache-pkg.outputs.cache-hit != 'true'
         run: |
-          cd _wasm_lib
-          cd pubky-sdk/bindings/js
-          rm -rf pkg
-          wasm-pack build --target web
-          cd ../../../../
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+          wasm-pack build --target web _wasm_lib/pubky-sdk/bindings/js
           mv _wasm_lib/pubky-sdk/bindings/js/pkg .
 
       - name: Stage deployment directory
