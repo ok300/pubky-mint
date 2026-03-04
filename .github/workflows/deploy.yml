@@ -38,10 +38,6 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
-      - name: Install wasm-pack
-        if: steps.cache-pkg.outputs.cache-hit != 'true'
-        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-
       - name: Checkout Pubky SDK repo at pinned commit
         if: steps.cache-pkg.outputs.cache-hit != 'true'
         uses: actions/checkout@v4
@@ -59,11 +55,8 @@ jobs:
       - name: Build pkg/ from GitHub source
         if: steps.cache-pkg.outputs.cache-hit != 'true'
         run: |
-          cd _wasm_lib
-          cd pubky-sdk/bindings/js
-          rm -rf pkg
-          wasm-pack build --target web
-          cd ../../../../
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+          wasm-pack build --target web _wasm_lib/pubky-sdk/bindings/js
           mv _wasm_lib/pubky-sdk/bindings/js/pkg .
 
       - name: Stage deployment directory
