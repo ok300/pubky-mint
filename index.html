@@ -394,12 +394,14 @@
       try { bodyEl.textContent = await pubky.publicStorage.getText(uri); }
       catch (e) { bodyEl.style.color = "#555"; bodyEl.textContent = `Could not load content:\n${e?.message ?? e}`; }
     }
-    if (data) {
-      const sub = path.slice("pub/pubky.app/".length);
+    const sub = path.slice("pub/pubky.app/".length);
+    if (sub.startsWith("follows/")) {
+      renderAuthorRow(ps, path.split("/").pop(), "Followed");
+      if (data) ps.append(parsedField("Followed at", formatDate(data.created_at)));
+    } else if (data) {
       if      (sub.startsWith("bookmarks/")) await renderBookmark(ps, data);
       else if (sub.startsWith("tags/"))      await renderTag(ps, data);
       else if (sub.startsWith("posts/"))     await renderPost(ps, data);
-      else if (sub.startsWith("follows/"))   { renderAuthorRow(ps, path.split("/").pop(), "Followed"); ps.append(parsedField("Followed at", formatDate(data.created_at))); }
       else if (sub.startsWith("last_read"))  ps.append(parsedField("Last read", formatDate(data.created_at ?? data.timestamp ?? data.read_at ?? Object.values(data)[0])));
       else if (sub.startsWith("settings"))   ps.append(parsedField("Updated at", formatDate(data.updatedAt)));
     }
