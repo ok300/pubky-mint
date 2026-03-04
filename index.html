@@ -29,6 +29,10 @@
       letter-spacing: 0.08em; color: #555; border-bottom: 1px solid #222;
     }
     #col-left-header, #col-mid-header { flex-shrink: 0; }
+    #col-mid-filter { display: flex; align-items: center; gap: 0.5rem 0.75rem; flex-wrap: wrap; padding: 0.45rem 1rem; border-bottom: 1px solid #222; font-size: 0.72rem; color: #555; flex-shrink: 0; }
+    #col-mid-filter label { display: flex; align-items: center; gap: 0.25rem; cursor: pointer; color: #666; user-select: none; }
+    #col-mid-filter label:hover { color: #aaa; }
+    #col-mid-filter input[type="radio"] { accent-color: #5ecfa0; cursor: pointer; margin: 0; }
     .follows-separator { border-top: 1px solid #222; }
 
     #follows-list { list-style: none; overflow-y: auto; flex: 1; }
@@ -119,6 +123,14 @@
     </div>
     <div id="col-mid-wrap">
       <div id="col-mid-header">Checkpoint: —</div>
+      <div id="col-mid-filter">
+        <span>Show:</span>
+        <label><input type="radio" name="event-filter" value="all" checked> All events</label>
+        <label><input type="radio" name="event-filter" value="post"> Posts</label>
+        <label><input type="radio" name="event-filter" value="tag"> Tags</label>
+        <label><input type="radio" name="event-filter" value="follow"> Follows</label>
+        <label><input type="radio" name="event-filter" value="bookmark"> Bookmarks</label>
+      </div>
       <div id="col-mid"></div>
     </div>
     <div id="col-right"></div>
@@ -243,6 +255,14 @@
     });
   }
 
+  function getEventKind(path) {
+    if (path.includes("/posts/"))     return "post";
+    if (path.includes("/tags/"))      return "tag";
+    if (path.includes("/follows/"))   return "follow";
+    if (path.includes("/bookmarks/")) return "bookmark";
+    return "other";
+  }
+
   function getEventIcon(path) {
     if (path.includes("/posts/"))     return svgIcon(`<path d="M2 11.5V14h2.5l7-7-2.5-2.5z"/><path d="M11.5 3.5l1 1a1 1 0 010 1.4L12 6.4 9.6 4l.5-.5a1 1 0 011.4 0z"/>`);
     if (path.includes("/bookmarks/")) return svgIcon(`<path d="M4 2h8a1 1 0 011 1v10l-5-3.2L3 13V3a1 1 0 011-1z"/>`);
@@ -307,6 +327,7 @@
     const uri  = ev.data[0] ?? "";
     const path = uri.replace(/^pubky:\/\/[^/]+\//, "");
     const li   = mk("li", "event-item");
+    li.dataset.kind = getEventKind(path);
     if (ev.cursor != null) li.dataset.cursor = ev.cursor;
     const iconEl = mk("span", "event-icon");
     const iconSvg = getEventIcon(path);
@@ -333,6 +354,15 @@
     return last;
   }
 
+  function applyFilter() {
+    const val = document.querySelector('input[name="event-filter"]:checked')?.value ?? "all";
+    for (const li of colMid.querySelectorAll(".event-item[data-kind]")) {
+      li.style.display = (val === "all" || li.dataset.kind === val) ? "" : "none";
+    }
+  }
+
+  document.getElementById("col-mid-filter").addEventListener("change", applyFilter);
+
   async function fetchEvents(userParam) {
     const res = await fetch(`https://homeserver.pubky.app/events-stream?user=${userParam}&reverse=true&limit=50`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -355,6 +385,7 @@
     let lastCursor = appendEvents(ul, events);
     colMid.append(ul);
     refreshUnreadMarkers();
+    applyFilter();
 
     const btn = mk("button", "load-more-btn", "Load more events");
     btn.addEventListener("click", async () => {
@@ -366,6 +397,7 @@
         if (!more.length) { btn.textContent = "No more events"; return; }
         lastCursor = appendEvents(ul, more);
         refreshUnreadMarkers();
+        applyFilter();
         btn.disabled = false;
         btn.textContent = "Load more events";
       } catch {
