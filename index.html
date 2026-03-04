@@ -70,6 +70,7 @@
     .checkpoint-btn:hover { border-color: #666; color: #bbb; }
     .event-item.active .event-cursor   { display: none; }
     .event-item.active .checkpoint-btn { display: inline-block; }
+    .event-item.active.is-checkpoint .checkpoint-btn { display: none; }
 
     .event-badge { flex-shrink: 0; font-size: 0.65rem; font-weight: bold; padding: 1px 5px; border-radius: 3px; text-transform: uppercase; }
     .event-put  { background: #1a3a1a; color: #5ecfa0; }
@@ -198,11 +199,13 @@
   }
 
   function refreshUnreadMarkers() {
-    const cp = BigInt(currentMidZ32 ? (checkpoints[currentMidZ32] ?? 0) : 0);
+    const cpStr = currentMidZ32 ? (checkpoints[currentMidZ32] ?? null) : null;
+    const cp = BigInt(cpStr ?? 0);
     let max = 0n;
     for (const li of colMid.querySelectorAll(".event-item[data-cursor]")) {
       const cur = BigInt(li.dataset.cursor);
       li.classList.toggle("event-unread", cur > cp);
+      li.classList.toggle("is-checkpoint", cpStr !== null && li.dataset.cursor === cpStr);
       if (cur > max) max = cur;
     }
     if (currentMidZ32 && max > 0n) { latestCursors[currentMidZ32] = max.toString(); refreshFollowMarkers(); }
