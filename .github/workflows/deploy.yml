@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  WASM_LIB_REF: v0.6.0   # <-- pin to a commit SHA or tag
+  WASM_LIB_REF: v0.6.0   # <-- Pubky SDK commit SHA or tag
 
 jobs:
   build:
