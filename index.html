@@ -29,6 +29,13 @@
       letter-spacing: 0.08em; color: #555; border-bottom: 1px solid #222;
     }
     #col-left-header, #col-mid-header { flex-shrink: 0; }
+    #col-mid-header { display: flex; align-items: center; justify-content: space-between; }
+    #header-btns { display: flex; gap: 0.4rem; }
+    #save-checkpoints-btn, #load-checkpoints-btn { background: none; border: 1px solid #333; color: #444; font-family: monospace; font-size: 0.7rem; padding: 2px 8px; border-radius: 3px; cursor: default; letter-spacing: 0.05em; text-transform: uppercase; transition: border-color 0.1s, color 0.1s; }
+    #save-checkpoints-btn:not(:disabled) { border-color: #5ecfa0; color: #5ecfa0; cursor: pointer; }
+    #save-checkpoints-btn:not(:disabled):hover { border-color: #7de0b6; color: #7de0b6; }
+    #load-checkpoints-btn { border-color: #444; color: #666; cursor: pointer; }
+    #load-checkpoints-btn:hover { border-color: #666; color: #aaa; }
     #col-mid-filter { display: flex; align-items: center; gap: 0.5rem 0.75rem; flex-wrap: wrap; padding: 0.45rem 1rem; border-bottom: 1px solid #222; font-size: 0.72rem; color: #555; flex-shrink: 0; }
     #col-mid-filter label { display: flex; align-items: center; gap: 0.25rem; cursor: pointer; color: #666; user-select: none; }
     #col-mid-filter label:hover { color: #aaa; }
@@ -124,7 +131,8 @@
       <ul id="follows-list"><li class="list-msg">Loading…</li></ul>
     </div>
     <div id="col-mid-wrap">
-      <div id="col-mid-header">Checkpoint: —</div>
+      <div id="col-mid-header"><span id="col-mid-header-text">Checkpoint: —</span><div id="header-btns"><button id="save-checkpoints-btn" disabled>Save</button><button id="load-checkpoints-btn">Load</button></div></div>
+      <input type="file" id="load-checkpoints-input" accept=".json" style="display:none">
       <div id="col-mid-filter">
         <span>Show:</span>
         <label><input type="radio" name="event-filter" value="all"> All events</label>
@@ -143,13 +151,16 @@
   import init, { Pubky, AuthFlowKind } from "./pkg/pubky_wasm.js";
   import QRCode from "https://esm.sh/qrcode@1.5.3";
 
-  const authScreen   = document.getElementById("auth-screen");
-  const authStatus   = document.getElementById("auth-status");
-  const appEl        = document.getElementById("app");
-  const followsList  = document.getElementById("follows-list");
-  const colMid       = document.getElementById("col-mid");
-  const colMidHeader = document.getElementById("col-mid-header");
-  const colRight     = document.getElementById("col-right");
+  const authScreen      = document.getElementById("auth-screen");
+  const authStatus      = document.getElementById("auth-status");
+  const appEl           = document.getElementById("app");
+  const followsList     = document.getElementById("follows-list");
+  const colMid          = document.getElementById("col-mid");
+  const colMidHeaderTxt = document.getElementById("col-mid-header-text");
+  const colRight        = document.getElementById("col-right");
+  const saveBtn         = document.getElementById("save-checkpoints-btn");
+  const loadBtn         = document.getElementById("load-checkpoints-btn");
+  const loadInput       = document.getElementById("load-checkpoints-input");
 
   const checkpoints   = {};
   const latestCursors = {};
@@ -188,8 +199,51 @@
   };
 
   const updateMidHeader = () => {
-    colMidHeader.textContent = "Checkpoint: " + (currentMidZ32 ? (checkpoints[currentMidZ32] ?? "—") : "—");
+    colMidHeaderTxt.textContent = "Checkpoint: " + (currentMidZ32 ? (checkpoints[currentMidZ32] ?? "—") : "—");
   };
+
+  const markDirty = () => { saveBtn.disabled = false; };
+
+  saveBtn.addEventListener("click", () => {
+    const now = new Date();
+    const p = n => String(n).padStart(2, "0");
+    const ts = `${now.getFullYear()}${p(now.getMonth()+1)}${p(now.getDate())}${p(now.getHours())}${p(now.getMinutes())}${p(now.getSeconds())}`;
+    const blob = new Blob([JSON.stringify({ version: 1, checkpoints }, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `pubky-mint-checkpoints-${ts}.json`; a.click();
+    URL.revokeObjectURL(url);
+    saveBtn.disabled = true;
+  });
+
+  loadBtn.addEventListener("click", () => { loadInput.value = ""; loadInput.click(); });
+
+  loadInput.addEventListener("change", () => {
+    const file = loadInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      let parsed;
+      try { parsed = JSON.parse(e.target.result); } catch { alert("Invalid JSON file."); return; }
+      if (typeof parsed !== "object" || parsed === null || typeof parsed.version !== "number" || typeof parsed.checkpoints !== "object" || parsed.checkpoints === null) {
+        alert("Invalid checkpoint file: missing or malformed version/checkpoints fields.");
+        return;
+      }
+      for (const [k, v] of Object.entries(parsed.checkpoints)) {
+        if (typeof k !== "string" || typeof v !== "string") {
+          alert("Invalid checkpoint file: checkpoints must be string→string mappings.");
+          return;
+        }
+      }
+      Object.keys(checkpoints).forEach(k => delete checkpoints[k]);
+      Object.assign(checkpoints, parsed.checkpoints);
+      updateMidHeader();
+      refreshUnreadMarkers();
+      refreshFollowMarkers();
+      saveBtn.disabled = true;
+    };
+    reader.readAsText(file);
+  });
 
   function refreshFollowMarkers() {
     for (const li of followsList.querySelectorAll(".follow-item[data-pubky]")) {
@@ -345,6 +399,7 @@
         checkpoints[currentMidZ32] = ev.cursor;
         updateMidHeader();
         refreshUnreadMarkers();
+        markDirty();
       });
       li.append(mk("span", "event-cursor", ev.cursor), btn);
     }
