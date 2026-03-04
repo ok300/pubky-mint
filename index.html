@@ -126,8 +126,8 @@
       <div id="col-mid-header">Checkpoint: —</div>
       <div id="col-mid-filter">
         <span>Show:</span>
-        <label><input type="radio" name="event-filter" value="all" checked> All events</label>
-        <label><input type="radio" name="event-filter" value="post"> Posts</label>
+        <label><input type="radio" name="event-filter" value="all"> All events</label>
+        <label><input type="radio" name="event-filter" value="post" checked> Posts</label>
         <label><input type="radio" name="event-filter" value="tag"> Tags</label>
         <label><input type="radio" name="event-filter" value="follow"> Follows</label>
         <label><input type="radio" name="event-filter" value="bookmark"> Bookmarks</label>
@@ -374,6 +374,7 @@
     const z32 = id.startsWith("pubky") ? id.slice(5) : id;
     currentMidZ32 = z32;
     updateMidHeader();
+    document.querySelector('input[name="event-filter"][value="post"]').checked = true;
     midMsg("Loading…");
     colRight.innerHTML = "";
     let events;
