@@ -65,11 +65,11 @@
 
     #follows-list { list-style: none; overflow-y: auto; flex: 1; }
 
-    .follow-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.55rem 1rem; cursor: pointer; border-bottom: 1px solid var(--border-dim); transition: background 0.08s; min-width: 0; }
+    .follow-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.55rem calc(1rem - 2px); border-left: 2px solid transparent; cursor: pointer; border-bottom: 1px solid var(--border-dim); transition: background 0.08s; min-width: 0; }
     .follow-item:hover:not(.active),  .event-item:hover:not(.active)  { background: var(--bg-hover); }
-    .follow-item.active, .event-item.active { background: var(--bg-active); border-left: 2px solid var(--accent); padding-left: calc(1rem - 2px); }
+    .follow-item.active, .event-item.active { background: var(--bg-active); border-left-color: var(--accent); }
     .follow-item.active .follow-name { color: #fff; }
-    .follow-item--guest:not(.active) { border-left: 2px solid #2a1f00; padding-left: calc(1rem - 2px); background: #111108; }
+    .follow-item--guest:not(.active) { border-left-color: #2a1f00; background: #111108; }
     .follow-item--guest:hover:not(.active) { background: #18180e; }
     .follow-unread:not(.active) { background: var(--bg-unread); }
     .follow-unread:not(.active) .follow-name { color: var(--text-bright); }
@@ -85,7 +85,7 @@
     #col-mid-wrap { flex: 1; border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
     #col-mid { flex: 1; overflow-y: auto; }
     .events-list { list-style: none; padding: 0.5rem 0; }
-    .event-item  { display: flex; align-items: center; gap: 0.6rem; padding: 0.45rem 1rem; border-bottom: 1px solid var(--border-dim); font-size: 0.8rem; cursor: pointer; transition: background 0.08s; }
+    .event-item  { display: flex; align-items: center; gap: 0.6rem; padding: 0.45rem calc(1rem - 2px); border-left: 2px solid transparent; border-bottom: 1px solid var(--border-dim); font-size: 0.8rem; cursor: pointer; transition: background 0.08s; }
     .event-unread:not(.active)             { background: var(--bg-unread); }
     .event-unread:not(.active) .event-path { color: var(--text-bright); }
     .event-unread:hover:not(.active)       { background: var(--bg-unread-hover); }
