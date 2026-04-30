@@ -300,6 +300,15 @@
   function refreshMidLoadControls() {
     const loadAllBtn = colMid.querySelector(".load-until-checkpoint-btn");
     if (!loadAllBtn) return;
+    if (colMid.dataset.loadingAll === "true") {
+      loadAllBtn.disabled = true;
+      loadAllBtn.textContent = "Loading…";
+      return;
+    }
+    if (colMid.dataset.loadingMore === "true") {
+      loadAllBtn.disabled = true;
+      return;
+    }
     if (!currentMidZ32 || checkpoints[currentMidZ32] == null) {
       loadAllBtn.disabled = true;
       loadAllBtn.textContent = "No checkpoint set";
@@ -526,6 +535,7 @@
     const loadAllBtn = mk("button", "load-more-btn load-until-checkpoint-btn", "Load all until checkpoint");
     btn.addEventListener("click", async () => {
       if (!lastCursor) return;
+      colMid.dataset.loadingMore = "true";
       btn.disabled = true;
       loadAllBtn.disabled = true;
       btn.textContent = "Loading…";
@@ -538,11 +548,13 @@
         btn.textContent = "Failed to load";
         btn.disabled = false;
       } finally {
+        delete colMid.dataset.loadingMore;
         refreshMidLoadControls();
       }
     });
     loadAllBtn.addEventListener("click", async () => {
       if (!lastCursor || checkpoints[z32] == null || hasCurrentCheckpointEventLoaded()) return;
+      colMid.dataset.loadingAll = "true";
       btn.disabled = true;
       loadAllBtn.disabled = true;
       loadAllBtn.textContent = "Loading…";
@@ -557,6 +569,7 @@
         loadAllBtn.textContent = "Failed to load";
         loadAllBtn.disabled = false;
       } finally {
+        delete colMid.dataset.loadingAll;
         if (btn.textContent !== "No more events") btn.disabled = false;
         if (!failed) refreshMidLoadControls();
       }
