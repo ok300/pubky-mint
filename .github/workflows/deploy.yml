@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  WASM_LIB_REF: v0.6.0   # <-- Pubky SDK commit SHA or tag
+  WASM_LIB_REF: c6bd352034fd34f2c742034eb284baf78bd90fc8   # <-- Pubky SDK commit SHA, tag or version (e.g. v0.7.0)
 
 jobs:
   build:
