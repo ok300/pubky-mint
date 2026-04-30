@@ -590,7 +590,7 @@
     });
     (async () => {
       for (const { id } of follows) {
-        await prefetchLatestCursor(id);
+        try { await prefetchLatestCursor(id); } catch { /* keep queue running */ }
         await new Promise(r => setTimeout(r, 200));
       }
     })();
