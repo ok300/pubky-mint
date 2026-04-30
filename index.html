@@ -583,6 +583,7 @@
   if (!follows.length) {
     followsList.innerHTML = '<li class="list-msg">Not following anyone yet.</li>';
   } else {
+    // Stagger prefetchLatestCursor calls 50 ms apart to avoid hitting HS rate-limit
     follows.forEach(({ name, id }, i) => {
       followsList.append(makeFollowItem(id, name));
       setTimeout(() => prefetchLatestCursor(id), i * 50);
