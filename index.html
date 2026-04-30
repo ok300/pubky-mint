@@ -113,7 +113,9 @@
     .load-more-btn:disabled { opacity: 0.4; cursor: default; }
 
     #col-right      { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-    #content-path   { padding: 0.6rem 1rem; font-size: 0.7rem; color: var(--text-muted); border-bottom: 1px solid var(--border); word-break: break-all; flex-shrink: 0; }
+    #content-path   { padding: 0.6rem 1rem; font-size: 0.7rem; color: var(--text-muted); border-bottom: 1px solid var(--border); word-break: break-all; flex-shrink: 0; display: flex; align-items: center; }
+    #open-in-pubky  { margin-left: auto; padding-left: 1rem; color: var(--accent); text-decoration: none; white-space: nowrap; flex-shrink: 0; }
+    #open-in-pubky:hover { text-decoration: underline; }
     #parsed-section { padding: 1rem; border-bottom: 1px solid var(--border); font-size: 0.85rem; line-height: 1.6; flex-shrink: 0; }
     #parsed-section:empty { display: none; }
     .parsed-label, .raw-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; }
@@ -598,8 +600,12 @@
 
   async function loadContent(uri, path) {
     if (path.startsWith("pub/pubky.app/blobs/")) { colRight.innerHTML = ""; return; }
+    const sub0 = path.slice("pub/pubky.app/".length);
+    const postLink = sub0.startsWith("posts/")
+      ? ` <a href="https://pubky.app/post/${uriZ32(uri)}/${sub0.slice("posts/".length)}" target="_blank" rel="noopener noreferrer" id="open-in-pubky">Open in Pubky.app</a>`
+      : "";
     colRight.innerHTML =
-      `<div id="content-path">${path}</div>` +
+      `<div id="content-path">${path}${postLink}</div>` +
       `<div id="parsed-section"></div>` +
       `<div id="raw-section"><div class="raw-label">Raw</div><div id="content-body">Loading…</div></div>`;
     const ps     = document.getElementById("parsed-section");
