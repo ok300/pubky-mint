@@ -107,6 +107,7 @@
     .event-path { color: var(--text-sub); word-break: break-all; }
     .load-more-wrap { padding: 0.75rem 1rem; text-align: center; }
     .events-range   { font-size: 0.7rem; color: var(--text-faint); margin-bottom: 0.5rem; }
+    .load-more-actions { display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap; }
     .load-more-btn  { background: none; border: 1px solid #333; color: var(--text-sub); font-family: monospace; font-size: 0.75rem; padding: 0.4rem 0.9rem; border-radius: 3px; cursor: pointer; transition: border-color 0.1s, color 0.1s; }
     .load-more-btn:hover:not(:disabled) { border-color: var(--text-muted); color: var(--text-secondary); }
     .load-more-btn:disabled { opacity: 0.4; cursor: default; }
@@ -185,6 +186,7 @@
 
   const checkpoints   = {};
   const latestCursors = {};
+  let currentLoadedCursors = new Set();
   let currentMidZ32   = null;
 
   const mk      = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -284,6 +286,51 @@
       if (cur > max) max = cur;
     }
     if (currentMidZ32 && max > 0n) { latestCursors[currentMidZ32] = max.toString(); refreshFollowMarkers(); }
+    refreshMidLoadControls();
+  }
+
+  function hasCurrentCheckpointEventLoaded() {
+    const cpStr = currentMidZ32 ? (checkpoints[currentMidZ32] ?? null) : null;
+    return cpStr != null && currentLoadedCursors.has(cpStr);
+  }
+
+  const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+  function getLoadAllButtonLabel(z32 = currentMidZ32) {
+    return z32 && checkpoints[z32] != null ? "Load all until checkpoint" : "Load all events";
+  }
+
+  function refreshMidLoadControls() {
+    const loadAllBtn = colMid.querySelector(".load-until-checkpoint-btn");
+    if (!loadAllBtn) return;
+    if (colMid.dataset.loadingAll === "true") {
+      loadAllBtn.disabled = true;
+      loadAllBtn.textContent = "Loading…";
+      return;
+    }
+    if (colMid.dataset.loadingMore === "true") {
+      loadAllBtn.disabled = true;
+      loadAllBtn.textContent = getLoadAllButtonLabel();
+      return;
+    }
+    if (!currentMidZ32) {
+      loadAllBtn.disabled = true;
+      loadAllBtn.textContent = "Load all events";
+      return;
+    }
+    const checkpointCursor = checkpoints[currentMidZ32];
+    if (checkpointCursor != null && hasCurrentCheckpointEventLoaded()) {
+      loadAllBtn.disabled = true;
+      loadAllBtn.textContent = "Checkpoint loaded";
+      return;
+    }
+    if (!colMid.dataset.lastCursor) {
+      loadAllBtn.disabled = true;
+      loadAllBtn.textContent = "No more events";
+      return;
+    }
+    loadAllBtn.disabled = false;
+    loadAllBtn.textContent = getLoadAllButtonLabel();
   }
 
   async function prefetchLatestCursor(z32) {
@@ -430,7 +477,13 @@
 
   function appendEvents(ul, evs) {
     let last = null;
-    for (const ev of evs) { ul.append(makeEventItem(ev)); if (ev.cursor) last = ev.cursor; }
+    for (const ev of evs) {
+      ul.append(makeEventItem(ev));
+      if (ev.cursor) {
+        currentLoadedCursors.add(ev.cursor);
+        last = ev.cursor;
+      }
+    }
     return last;
   }
 
@@ -452,6 +505,7 @@
   async function loadEvents(id) {
     const z32 = id.startsWith("pubky") ? id.slice(5) : id;
     currentMidZ32 = z32;
+    colMid.dataset.lastCursor = "";
     updateMidHeader();
     document.querySelector('input[name="event-filter"][value="post"]').checked = true;
     midMsg("Loading…");
@@ -462,8 +516,14 @@
     if (!events.length) { midMsg("No recent events."); return; }
 
     colMid.innerHTML = "";
+    currentLoadedCursors = new Set();
     const ul = mk("ul", "events-list");
-    let lastCursor = appendEvents(ul, events);
+    let lastCursor = null;
+    const setLastCursor = cursor => {
+      lastCursor = cursor ?? null;
+      colMid.dataset.lastCursor = lastCursor ?? "";
+    };
+    setLastCursor(appendEvents(ul, events));
     colMid.append(ul);
     refreshUnreadMarkers();
     applyFilter();
@@ -472,28 +532,68 @@
     const updateRange = () => { rangeEl.textContent = `Browsing most recent ${ul.querySelectorAll(".event-item").length} events`; };
     updateRange();
 
+    const loadNextPage = async () => {
+      if (!lastCursor) return [];
+      const more = await fetchEvents(`${z32}:${lastCursor}`);
+      if (!more.length) { setLastCursor(null); return []; }
+      setLastCursor(appendEvents(ul, more));
+      refreshUnreadMarkers();
+      applyFilter();
+      updateRange();
+      return more;
+    };
+
     const btn = mk("button", "load-more-btn", "Load more events");
+    const loadAllBtn = mk("button", "load-more-btn load-until-checkpoint-btn", getLoadAllButtonLabel(z32));
     btn.addEventListener("click", async () => {
       if (!lastCursor) return;
+      colMid.dataset.loadingMore = "true";
       btn.disabled = true;
+      loadAllBtn.disabled = true;
       btn.textContent = "Loading…";
       try {
-        const more = await fetchEvents(`${z32}:${lastCursor}`);
+        const more = await loadNextPage();
         if (!more.length) { btn.textContent = "No more events"; return; }
-        lastCursor = appendEvents(ul, more);
-        refreshUnreadMarkers();
-        applyFilter();
-        updateRange();
         btn.disabled = false;
         btn.textContent = "Load more events";
       } catch {
         btn.textContent = "Failed to load";
         btn.disabled = false;
+      } finally {
+        delete colMid.dataset.loadingMore;
+        refreshMidLoadControls();
+      }
+    });
+    loadAllBtn.addEventListener("click", async () => {
+      const checkpointCursor = checkpoints[z32];
+      if (!lastCursor || (checkpointCursor != null && currentLoadedCursors.has(checkpointCursor))) return;
+      colMid.dataset.loadingAll = "true";
+      btn.disabled = true;
+      loadAllBtn.disabled = true;
+      loadAllBtn.textContent = "Loading…";
+      let failed = false;
+      try {
+        while (lastCursor && (checkpointCursor == null || !currentLoadedCursors.has(checkpointCursor))) {
+          const more = await loadNextPage();
+          if (!more.length) break;
+          await wait(100);
+        }
+      } catch {
+        failed = true;
+        loadAllBtn.textContent = "Failed to load";
+        loadAllBtn.disabled = false;
+      } finally {
+        delete colMid.dataset.loadingAll;
+        if (btn.textContent !== "No more events") btn.disabled = false;
+        if (!failed) refreshMidLoadControls();
       }
     });
     const wrap = mk("div", "load-more-wrap");
-    wrap.append(rangeEl, btn);
+    const actions = mk("div", "load-more-actions");
+    actions.append(btn, loadAllBtn);
+    wrap.append(rangeEl, actions);
     colMid.append(wrap);
+    refreshMidLoadControls();
   }
 
   async function loadContent(uri, path) {
