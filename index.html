@@ -576,7 +576,7 @@
         while (lastCursor && (checkpointCursor == null || !currentLoadedCursors.has(checkpointCursor))) {
           const more = await loadNextPage();
           if (!more.length) break;
-          await wait(100);
+          await wait(1000);
         }
       } catch {
         failed = true;
