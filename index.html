@@ -691,7 +691,7 @@
     (async () => {
       for (const { id } of follows) {
         try { await prefetchLatestCursor(id); } catch { /* keep queue running */ }
-        await new Promise(r => setTimeout(r, 200));
+        await new Promise(r => setTimeout(r, 1000));
       }
     })();
   }
