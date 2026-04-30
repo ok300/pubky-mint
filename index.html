@@ -683,11 +683,17 @@
   if (!follows.length) {
     followsList.innerHTML = '<li class="list-msg">Not following anyone yet.</li>';
   } else {
-    // Stagger prefetchLatestCursor calls 50 ms apart to avoid hitting HS rate-limit
-    follows.forEach(({ name, id }, i) => {
+    // Render items immediately, then prefetch cursors one at a time to stay
+    // under the homeserver rate limit (sequential avoids the 429 / CORS burst).
+    follows.forEach(({ name, id }) => {
       followsList.append(makeFollowItem(id, name));
-      setTimeout(() => prefetchLatestCursor(id), i * 50);
     });
+    (async () => {
+      for (const { id } of follows) {
+        try { await prefetchLatestCursor(id); } catch { /* keep queue running */ }
+        await new Promise(r => setTimeout(r, 200));
+      }
+    })();
   }
 </script>
 
