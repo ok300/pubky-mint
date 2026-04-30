@@ -13,7 +13,7 @@ You can see every action a user takes, including tagging, follows, bookmarks or 
 
 - Login with Pubky Ring
 - Left panel will show users you follow
-- Once you select a user, the middle panel wil show this user's most recent events
+- Once you select a user, the middle panel will show this user's most recent events
 - Click on events to see their details in the right panel
 - Once you're up-to-date with someone's activity (you read the events you were interested in), hit "Set checkpoint" on the latest event you read.
 - If your checkpoint is older than the currently loaded events, click **Load all until checkpoint** to keep paging until that checkpoint event is visible.

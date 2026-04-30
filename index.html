@@ -186,6 +186,7 @@
 
   const checkpoints   = {};
   const latestCursors = {};
+  let currentLoadedCursors = new Set();
   let currentMidZ32   = null;
 
   const mk      = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -290,11 +291,7 @@
 
   function hasCurrentCheckpointEventLoaded() {
     const cpStr = currentMidZ32 ? (checkpoints[currentMidZ32] ?? null) : null;
-    if (cpStr == null) return false;
-    for (const li of colMid.querySelectorAll(".event-item[data-cursor]")) {
-      if (li.dataset.cursor === cpStr) return true;
-    }
-    return false;
+    return cpStr != null && currentLoadedCursors.has(cpStr);
   }
 
   function refreshMidLoadControls() {
@@ -472,7 +469,13 @@
 
   function appendEvents(ul, evs) {
     let last = null;
-    for (const ev of evs) { ul.append(makeEventItem(ev)); if (ev.cursor) last = ev.cursor; }
+    for (const ev of evs) {
+      ul.append(makeEventItem(ev));
+      if (ev.cursor) {
+        currentLoadedCursors.add(ev.cursor);
+        last = ev.cursor;
+      }
+    }
     return last;
   }
 
@@ -505,6 +508,7 @@
     if (!events.length) { midMsg("No recent events."); return; }
 
     colMid.innerHTML = "";
+    currentLoadedCursors = new Set();
     const ul = mk("ul", "events-list");
     let lastCursor = null;
     const setLastCursor = cursor => {
@@ -553,14 +557,15 @@
       }
     });
     loadAllBtn.addEventListener("click", async () => {
-      if (!lastCursor || checkpoints[z32] == null || hasCurrentCheckpointEventLoaded()) return;
+      const checkpointCursor = checkpoints[z32];
+      if (!lastCursor || checkpointCursor == null || currentLoadedCursors.has(checkpointCursor)) return;
       colMid.dataset.loadingAll = "true";
       btn.disabled = true;
       loadAllBtn.disabled = true;
       loadAllBtn.textContent = "Loading…";
       let failed = false;
       try {
-        while (lastCursor && !hasCurrentCheckpointEventLoaded()) {
+        while (lastCursor && !currentLoadedCursors.has(checkpointCursor)) {
           const more = await loadNextPage();
           if (!more.length) break;
         }
