@@ -17,6 +17,7 @@ You can see every action a user takes, including tagging, follows, bookmarks or 
 - Click on events to see their details in the right panel
 - Once you're up-to-date with someone's activity (you read the events you were interested in), hit "Set checkpoint" on the latest event you read.
 - If your checkpoint is older than the currently loaded events, click **Load all until checkpoint** to keep paging until that checkpoint event is visible.
+- If no checkpoint is set for the selected user, the same button becomes **Load all events** and keeps paging until no more events remain.
 - The left panel will only highlight users that have new, unread events
 
 ## Saving and loading checkpoints

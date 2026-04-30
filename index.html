@@ -294,6 +294,12 @@
     return cpStr != null && currentLoadedCursors.has(cpStr);
   }
 
+  const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+  function getLoadAllButtonLabel(z32 = currentMidZ32) {
+    return z32 && checkpoints[z32] != null ? "Load all until checkpoint" : "Load all events";
+  }
+
   function refreshMidLoadControls() {
     const loadAllBtn = colMid.querySelector(".load-until-checkpoint-btn");
     if (!loadAllBtn) return;
@@ -304,14 +310,16 @@
     }
     if (colMid.dataset.loadingMore === "true") {
       loadAllBtn.disabled = true;
+      loadAllBtn.textContent = getLoadAllButtonLabel();
       return;
     }
-    if (!currentMidZ32 || checkpoints[currentMidZ32] == null) {
+    if (!currentMidZ32) {
       loadAllBtn.disabled = true;
-      loadAllBtn.textContent = "No checkpoint set";
+      loadAllBtn.textContent = "Load all events";
       return;
     }
-    if (hasCurrentCheckpointEventLoaded()) {
+    const checkpointCursor = checkpoints[currentMidZ32];
+    if (checkpointCursor != null && hasCurrentCheckpointEventLoaded()) {
       loadAllBtn.disabled = true;
       loadAllBtn.textContent = "Checkpoint loaded";
       return;
@@ -322,7 +330,7 @@
       return;
     }
     loadAllBtn.disabled = false;
-    loadAllBtn.textContent = "Load all until checkpoint";
+    loadAllBtn.textContent = getLoadAllButtonLabel();
   }
 
   async function prefetchLatestCursor(z32) {
@@ -536,7 +544,7 @@
     };
 
     const btn = mk("button", "load-more-btn", "Load more events");
-    const loadAllBtn = mk("button", "load-more-btn load-until-checkpoint-btn", "Load all until checkpoint");
+    const loadAllBtn = mk("button", "load-more-btn load-until-checkpoint-btn", getLoadAllButtonLabel(z32));
     btn.addEventListener("click", async () => {
       if (!lastCursor) return;
       colMid.dataset.loadingMore = "true";
@@ -558,16 +566,17 @@
     });
     loadAllBtn.addEventListener("click", async () => {
       const checkpointCursor = checkpoints[z32];
-      if (!lastCursor || checkpointCursor == null || currentLoadedCursors.has(checkpointCursor)) return;
+      if (!lastCursor || (checkpointCursor != null && currentLoadedCursors.has(checkpointCursor))) return;
       colMid.dataset.loadingAll = "true";
       btn.disabled = true;
       loadAllBtn.disabled = true;
       loadAllBtn.textContent = "Loading…";
       let failed = false;
       try {
-        while (lastCursor && !currentLoadedCursors.has(checkpointCursor)) {
+        while (lastCursor && (checkpointCursor == null || !currentLoadedCursors.has(checkpointCursor))) {
           const more = await loadNextPage();
           if (!more.length) break;
+          await wait(100);
         }
       } catch {
         failed = true;
