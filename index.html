@@ -104,6 +104,7 @@
     .event-put  { background: #1a3a1a; color: var(--accent); }
     .event-del  { background: #3a1a1a; color: #f44336; }
     .tag-badge  { background: #2a2200; color: #e6c200; text-transform: lowercase; font-size: 0.9rem; }
+    .tag-pill   { margin-left: auto; flex-shrink: 0; font-size: 0.6rem; font-weight: 600; padding: 1px 7px; border-radius: 9px; background: #1a3320; color: #4cdf6a; white-space: nowrap; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
     .event-path { color: var(--text-sub); word-break: break-all; }
     .load-more-wrap { padding: 0.75rem 1rem; text-align: center; }
     .events-range   { font-size: 0.7rem; color: var(--text-faint); margin-bottom: 0.5rem; }
@@ -473,6 +474,15 @@
     const iconSvg = getEventIcon(path);
     if (iconSvg) iconEl.innerHTML = iconSvg;
     li.append(iconEl, mk("span", `event-badge event-${ev.type.toLowerCase()}`, ev.type), mk("span", "event-path", path));
+    // For tag events, async-fetch the tag label and show a pill
+    if (getEventKind(path) === "tag" && ev.type.toUpperCase() !== "DEL") {
+      const pill = mk("span", "tag-pill");
+      pill.style.display = "none";
+      li.append(pill);
+      pubky.publicStorage.getJson(uri).then(data => {
+        if (data?.label) { pill.textContent = data.label; pill.style.display = ""; }
+      }).catch(() => {});
+    }
     if (ev.cursor != null) {
       const btn = mk("button", "checkpoint-btn", "Set checkpoint");
       btn.title = "Setting an event as checkpoint marks all of this user's events up to here as read, all newer events as unread.";
