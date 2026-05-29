@@ -434,14 +434,26 @@
     const tsField = parsedField("Tagged", formatDate(tag.created_at));
     if (!tag.uri) { container.append(tsField); return; }
     if (tag.uri.includes("/pub/pubky.app/posts/")) {
+      const z32 = uriZ32(tag.uri);
+      const postId = tag.uri.split("/posts/")[1];
       await renderQuotedPost(container, "Post", tag.uri, "parsed-post-content");
       container.append(tsField);
-      renderAuthorRow(container, uriZ32(tag.uri));
+      renderAuthorRow(container, z32);
+      const link = mk("a", null, "Open in Pubky.app");
+      link.href = `https://pubky.app/post/${z32}/${postId}`;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      container.append(parsedField("", link));
     } else {
       const z32    = uriZ32(tag.uri);
       const nameEl = mk("span", null, "…");
       container.append(tsField, parsedField("User", "pubky" + z32), parsedField("Username", nameEl));
       nexusDetails(z32, nameEl);
+      const link = mk("a", null, "Open in Pubky.app");
+      link.href = `https://pubky.app/profile/${z32}`;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      container.append(parsedField("", link));
     }
   }
 
